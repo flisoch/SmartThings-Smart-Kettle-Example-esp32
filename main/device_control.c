@@ -156,7 +156,6 @@ void temperature_events_task(void *arg) {
 		xQueueOverwrite(queue, &send_value);
 		vTaskDelay(pdMS_TO_TICKS(TEMPERATURE_EVENT_MS_RATE));
 	}
-	
 }
 
 

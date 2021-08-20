@@ -32,7 +32,7 @@ static iot_stat_lv_t g_iot_stat_lv;
 
 IOT_CTX* ctx = NULL;
 
-QueueHandle_t temperature_events_q = NULL;
+// QueueHandle_t temperature_events_q = NULL;
 
 static caps_switch_data_t *cap_switch_data;
 static caps_temperature_data_t *cap_temperature_data;
@@ -128,12 +128,15 @@ static void connection_start(void)
     }
 }
 
-
 static void app_main_task(void *arg)
 {   
     double temperature_value;
     double prev_temp_value = 0;
 
+    TaskHandle_t xHandle = NULL;
+    QueueHandle_t temperature_events_q = xQueueCreate(1, sizeof(double));
+    xTaskCreate(temperature_events_task, "temperature_events_task", 4096, (void *)temperature_events_q, 10, &xHandle);
+    
     for (;;) {
         if (get_button_event()) {
             cap_switch_data->set_switch_value(cap_switch_data, caps_helper_switch.attr_switch.value_off);
@@ -142,7 +145,6 @@ static void app_main_task(void *arg)
         }
         if (thermostat_enable) {
             xQueueReceive(temperature_events_q, &temperature_value, portMAX_DELAY);
-
             if(prev_temp_value != temperature_value) {
                 prev_temp_value = temperature_value;
                 printf("TEMP RECEIVED: %f\n", temperature_value);
@@ -153,6 +155,9 @@ static void app_main_task(void *arg)
             }
         }
         if (thermostat_enable && temperature_value >= heating_setpoint) {
+            if( xHandle != NULL ) {
+                vTaskDelete( xHandle );
+            }
             thermostat_enable = false;
             change_rgb_led_boiling(heating_setpoint, temperature_value);
             temperature_value = 0;
@@ -171,34 +176,7 @@ static void app_main_task(void *arg)
     }
 }
 
-void temperature_events_task1(void *arg) {
-    // Create a 1-Wire bus, using the RMT timeslot driver
-    owb_rmt_driver_info rmt_driver_info;
-    DS18B20_Info * ds18b20_info;
- 	OneWireBus *owb;
-	owb = owb_rmt_initialize(&rmt_driver_info, ADC_TEMPERATURE_SENSOR, RMT_CHANNEL_1, RMT_CHANNEL_0);
-    owb_use_crc(owb, true);  // enable CRC check for ROM code
-	ds18b20_info = ds18b20_malloc(); 
-	ds18b20_init_solo(ds18b20_info, owb);
-	ds18b20_use_crc(ds18b20_info, true);
-	ds18b20_set_resolution(ds18b20_info, DS18B20_RESOLUTION_12_BIT);
-	
-	float temperature_value;
-	double send_value;
-	for (;;)
-	{	
-		ds18b20_convert_all(owb);
-		ds18b20_wait_for_conversion(ds18b20_info);
-		ds18b20_read_temp(ds18b20_info, &temperature_value);
-		send_value = (double) temperature_value;
-        if (temperature_events_q != 0) {
-    		xQueueSendToBack(temperature_events_q, ( void * ) &send_value, ( TickType_t ) 0);
-        }
 
-		vTaskDelay(pdMS_TO_TICKS(TEMPERATURE_EVENT_MS_RATE));
-	}
-	
-}
 
 void app_main(void) 
 {
@@ -225,10 +203,8 @@ void app_main(void)
     connection_start();
 
     // device input handling
-    temperature_events_q = xQueueCreate(1, sizeof(double));
-    if (temperature_events_q != NULL) {
-        xTaskCreate(app_main_task, "app_main_task", 4096, NULL, 10, NULL);
-        xTaskCreate(temperature_events_task1, "temperature_events_task", 4096, NULL, 10, NULL);
-    }
+    xTaskCreate(app_main_task, "app_main_task", 4096, NULL, 10, NULL);
+
+    
     
 }
