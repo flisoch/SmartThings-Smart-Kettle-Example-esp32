@@ -143,16 +143,16 @@ static void app_main_task(void *arg)
             cap_switch_data->attr_switch_send(cap_switch_data);
             thermostat_enable = true;
         }
+
+        xQueueReceive(temperature_events_q, &temperature_value, portMAX_DELAY);
+        if(prev_temp_value != temperature_value) {
+            prev_temp_value = temperature_value;
+            cap_temperature_data->set_temperature_value(cap_temperature_data, temperature_value);
+            cap_temperature_data->attr_temperature_send(cap_temperature_data);
+        }
         if (thermostat_enable) {
-            xQueueReceive(temperature_events_q, &temperature_value, portMAX_DELAY);
-            if(prev_temp_value != temperature_value) {
-                prev_temp_value = temperature_value;
-                printf("TEMP RECEIVED: %f\n", temperature_value);
-                change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
-                change_rgb_led_boiling(heating_setpoint, temperature_value);
-                cap_temperature_data->set_temperature_value(cap_temperature_data, temperature_value);
-                cap_temperature_data->attr_temperature_send(cap_temperature_data);
-            }
+            change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+            change_rgb_led_boiling(heating_setpoint, temperature_value);
         }
         if (thermostat_enable && temperature_value >= heating_setpoint) {
             if( xHandle != NULL ) {

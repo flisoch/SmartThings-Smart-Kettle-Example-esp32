@@ -159,7 +159,6 @@ void temperature_events_task(void *arg) {
 }
 
 
-
 void change_buzzer_state(int buzzer_state) 
 {	
 	if (buzzer_state == BUZZER_OFF) {
@@ -180,8 +179,12 @@ void change_rgb_led_boiling(double heating_setpoint, double current_temperature)
 	// Green 0, 255, 0    --   0%
 	// Yellow 255, 255, 0 --  50%
 	// Red 255, 0, 0      -- 100%
+	// 27 = 0
+	// 35 = 100
+	double min = 27;
+	double max = heating_setpoint;
 
-	double progress_f = current_temperature/heating_setpoint * 100;
+	double progress_f = (current_temperature - min)/(max - min) * 100;
 	int progress = (int)round(progress_f);
 	printf("boiling progress: %d %% ", progress);
 
