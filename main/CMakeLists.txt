@@ -1,13 +1,7 @@
-idf_component_register(SRCS "main.c"
-                            "device_control.c"
-                            "caps_temperatureMeasurement.c"
-                            "caps_switch.c"
-                            "caps_thermostatHeatingSetpoint.c"
-                            "ds18b20.c"
-                            "owb.c"
-                            "owb_gpio.c"
-                            "owb_rmt.c"
-
+idf_component_register(SRC_DIRS
+                            .
+                            ../components/esp32-ds18b20
+                            ../components/esp32-owb
                     EMBED_FILES "device_info.json"
                                 "onboarding_config.json"
                     )
