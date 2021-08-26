@@ -1,56 +1,34 @@
-# SmartThings SDK for Direct Connected Devices for C - Light Example
+# Проект "Умный чайник"
 
-## Introduction
+## Что это
+В этом репозитории содержится код прошивки esp32 устройства "Умный чайник" с интерграцией в SmartThings. Этот же пример, но с использованием esp8266 и без датчика температуры расположен в [этом репозитории](https://github.com/flisoch/SmartThings-Smart-Kettle-Example-ESP8266). Создание проекта под esp8266 описано в [туториале](https://habr.com/ru/company/samsung/blog/573514/) на Хабре. 
+## Как начать
+Если вы ещё не работали с SmartThings, рекомендую пройти [этот туториал](https://habr.com/ru/company/samsung/blog/489834/) на Хабре, в котором описаны шаги создания типового проекта в целом, и подготовка окружения, сборка и прошивка в частности. Та же эта информация доступна в [Getting Started](https://github.com/SmartThingsCommunity/st-device-sdk-c-ref/blob/master/doc/getting_started.md) справочного репозитория [st-device-sdk-ref-c](https://github.com/SmartThingsCommunity/st-device-sdk-c-ref) с примерами под разные платы.
 
-SmartThings direct-connected device is Wi-Fi enabled device that uses the SmartThings cloud as its primary cloud infrastructure. And this device will use the MQTT protocol for communication.
+### Сборка и прошивка примера
+Если вы уже запускали примеры и у вас подготовлено окружение:
 
-## Getting started
+1. Перейдите в директорию `apps/esp8266` c примерами под эту платформу.
+    ```
+    st-device-sdk-c-ref
+    ├── apps
+    │   ├── ...
+    │   ├── esp32
+    │   └── ...
+    ├── ...
+    ```
+2. Находять в директории `apps/esp32`, склонируйте этот репозиторий и его гит подмодули/submodules
+ 
+   `$git clone --recurse-submodules https://github.com/flisoch/SmartThings-Smart-Kettle-Example-esp32.git kettle_example`
 
-For information on detailed workflow, please refer to the [Getting Started](../../../doc/getting_started.md)
+3. Добавьте свои файлы `device_info.json` и `onboarding_config.json` в директорию `kettle_example/main`
 
-## Components and Capabilities
+4. (Опционально). Создайте кастомное Heating Setpoint Capability по [алгоритму](https://github.com/flisoch/SmartThings-Smart-Kettle-Example-ESP8266/blob/master/custom-capability/README.md)
 
-SmartThings Device is defined using components and capabilities. Capabilities define the features of the device, and capabilities are grouped into components.
-Components and Capabilities are contained in device profile. You can create a device profile in Developer Workspace and associate it with an integration.
-
-This example assumes the following components and capabilities are used. :  
-
-`main` component  
-- `healthCheck` capability  
-- `switch` capability  
-- `switchLevel` capability  
-- `colorTemperature` capability  
-- `activityLightingMode` capability  
-
-`monitor` component  
-- `dustSensor` capability  
-
-(`healthCheck` capability is automatically added by Developer Workspace. It doesn't need handler at device side)
-
-## SmartThings SDK for Direct Connected Devices - Config
-If you want to use specific SmartThings Device SDK build options, you can directly modify the build configuration file. For this example, SmartThings Device SDK config is saved in 'sdkconfig' file. If you want to change this, please execute the following :
-```sh
-# python build.py {app_path} {option}
-$ cd ~/st-device-sdk-c-ref/
-$ python build.py app/esp32/light_example menuconfig
-```
-
-## Test device schematics
-This example uses ESP32 GPIO like below.  
-Please refer below picture for __ESP32-DevKitC__.  
-> Note: If your device's schematics doesn't match with belows.
-> Please modify GPIO defines for your device at [device_control.h](main/device_control.h)
-> ```c
-> #define GPIO_INPUT_BUTTON 0
-> 
-> #define GPIO_OUTPUT_COLORLED_R 12
-> #define GPIO_OUTPUT_COLORLED_G 14
-> #define GPIO_OUTPUT_COLORLED_B 27
-> #define GPIO_OUTPUT_COLORLED_0 26
-> ```
-
-### ESP32-DevKitC V4  
-| ESP32 DevKitC                                                     |
-|-------------------------------------------------------------------|
-|![ESP32_DEVKITC](../../../doc/res/Light_Example_ESP32_DEVKITC.png) |
-
+5. Перейдите обратно в директорию `st-device-sdk-c-ref` и соберите проект
+   
+   `$python3 build.py esp32 kettle_example`
+   
+6. Прошейте устройство и запустите вывод работы в терминал
+   
+   `$python3 build.py esp32 kettle_example flash monitor`
