@@ -23,7 +23,7 @@
 
 3. Добавьте свои файлы `device_info.json` и `onboarding_config.json` в директорию `kettle_example/main`
 
-4. (Опционально). Создайте кастомное Heating Setpoint Capability по [алгоритму](https://github.com/flisoch/SmartThings-Smart-Kettle-Example-ESP8266/blob/master/custom-capability/README.md)
+4. (Опционально). Создайте кастомное Heating Setpoint Capability по [алгоритму](https://github.com/flisoch/SmartThings-Smart-Kettle-Example-esp32/blob/master/custom-capability/README.md)
 
 5. Перейдите обратно в директорию `st-device-sdk-c-ref` и соберите проект
    
