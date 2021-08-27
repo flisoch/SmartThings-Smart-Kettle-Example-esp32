@@ -101,32 +101,37 @@ void change_rgb_state(int pin, int value)
 	}
 }
 
-void blink_led(double heating_setpoint, int led_state)
+void setpoint_rgb_indication(double heating_setpoint, int led_state)
 {
 	// any signalling of chosen temperature/heating mode
-	int blinks = 0;
-	if (heating_setpoint <= 10) {
-		blinks = 1;
+	if (heating_setpoint <= 30) {
+		//blue
+		change_rgb_state(GPIO_OUTPUT_RGBLED_B, 1);
 	}
-	else if (heating_setpoint <= 30)
-	{
-		blinks = 2;
+	else if (heating_setpoint <= 50)
+	{	
+		// yellow
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+		change_rgb_led_state(255, 255, 0);
 	}
-	else if (heating_setpoint <= 50) {
-		blinks = 3;
+	else if (heating_setpoint <= 75) {
+		//orange
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+		change_rgb_led_state(255, 195, 0);
 	}
 	else if (heating_setpoint <= 100) {
-		blinks = 4;
+		//red
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+		change_rgb_led_state(255, 0, 0);
 	}
 	else {
 		printf("heating setpoint is more than 100 or not set!\nPlease, set correct number");
 	}
-	for (int i = 0; i < blinks; i++) {
-		change_switch_state(1 - led_state);
-		vTaskDelay(pdMS_TO_TICKS(BLINK_DURATION));
-		change_switch_state(led_state);
-		vTaskDelay(pdMS_TO_TICKS(BLINK_DURATION));
-	}
+	
+	vTaskDelay(pdMS_TO_TICKS(HEATING_SETPOINT_RGB_DURATION));
+	change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_GPIO_OFF);
+    change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_GPIO_OFF);
+    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_ON);
 }
 
 
@@ -181,7 +186,7 @@ void change_rgb_led_boiling(double heating_setpoint, double current_temperature)
 	// Red 255, 0, 0      -- 100%
 	// 27 = 0
 	// 35 = 100
-	double min = 27;
+	double min = 0;
 	double max = heating_setpoint;
 
 	double progress_f = (current_temperature - min)/(max - min) * 100;

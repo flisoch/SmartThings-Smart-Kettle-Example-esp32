@@ -12,7 +12,7 @@
 #define BUZZER_SOUND_DURATION 3000
 #define RGB_BOILING_ADJUSTMENT_DURATION 20
 #define BUTTON_DEBOUNCE_TIME_MS 20
-#define BLINK_DURATION 300
+#define HEATING_SETPOINT_RGB_DURATION 1500
 
 // init rgb values -- green 
 #define RGB_LED_R 0
@@ -43,7 +43,7 @@ enum led_gpio_state {
 void change_switch_state(int switch_state);
 void change_thermostat_state(int *thermostat_state);
 void iot_gpio_init(void);
-void blink_led(double heating_setpoint, int led_state);
+void setpoint_rgb_indication(double heating_setpoint, int led_state);
 double temperature_event(double temp);
 void change_rgb_state(int pin, int value);
 void beep();
