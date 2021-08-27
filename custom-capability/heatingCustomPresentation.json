@@ -1,0 +1,24 @@
+{
+    "detailView": [
+        {
+            "label": "Heating temperature",
+            "displayType": "stepper",
+            "stepper": {
+                "command": {
+                    "name": "setTemperature",
+                    "argumentType": "number"
+                },
+                "value": "temperature.value",
+                "valueType": "number",
+                "step": 1,
+                "range": [
+                    0,
+                    100
+                ]
+            },
+            "state": null
+        }
+    ],
+    "id": "change.me",
+    "version": 1
+}

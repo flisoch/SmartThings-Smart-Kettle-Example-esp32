@@ -1,0 +1,51 @@
+{
+    "name": "Heating Setpoint",
+    "attributes": {
+        "temperature": {
+            "schema": {
+                "title": "Temperature",
+                "type": "object",
+                "properties": {
+                    "value": {
+                        "title": "TemperatureValue",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                    },
+                    "unit": {
+                        "type": "string",
+                        "enum": [
+                            "F",
+                            "C"
+                        ],
+                        "default": "C"
+                    }
+                },
+                "additionalProperties": false,
+                "required": [
+                    "value"
+                ]
+            },
+            "setter": "setTemperature",
+            "enumCommands": []
+        }
+    },
+    "commands": {
+        "setTemperature": {
+            "name":"setTemperature",
+            "arguments": [
+                {
+                    "name": "value",
+                    "optional": false,
+                    "schema": {
+                        "title": "TemperatureValue",
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                    }
+                }
+            ]
+        }
+        
+    }
+}
