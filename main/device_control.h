@@ -35,19 +35,19 @@ enum buzzer_onoff_state {
 };
 
 enum led_gpio_state {
-    LED_GPIO_ON = 1,
-    LED_GPIO_OFF = 0,
+    LED_ON = 1,
+    LED_OFF = 0,
     LED_DAC_MAX = 255
 };
 
 void change_switch_state(int switch_state);
 void change_thermostat_state(int *thermostat_state);
 void iot_gpio_init(void);
-void setpoint_rgb_indication(double heating_setpoint, int led_state);
+void setpoint_rgb_indication(double heating_setpoint);
 double temperature_event(double temp);
 void change_rgb_state(int pin, int value);
 void beep();
 int get_button_event();
-void change_rgb_led_boiling(double heating_setpoint, double current_temperature);
+void change_rgb_led_heating(double heating_setpoint, double current_temperature);
 void change_rgb_led_state(int red, int green, int blue);
 void temperature_events_task(void *arg);

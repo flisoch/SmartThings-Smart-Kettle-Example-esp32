@@ -81,7 +81,7 @@ static void cap_thermostat_cmd_cb(struct caps_thermostatHeatingSetpoint_data *ca
 { 
     heating_setpoint = caps_data->get_value(caps_data);
     int led_state = get_switch_state();
-    setpoint_rgb_indication(heating_setpoint, led_state);
+    setpoint_rgb_indication(heating_setpoint);
 }
 
 static void capability_init()
@@ -133,8 +133,8 @@ static void app_main_task(void *arg)
     double temperature_value;
     double prev_temp_value = 0;
 
-    TaskHandle_t xHandle = NULL;
     QueueHandle_t temperature_events_q = xQueueCreate(1, sizeof(double));
+    TaskHandle_t xHandle = NULL;
     xTaskCreate(temperature_events_task, "temperature_events_task", 4096, (void *)temperature_events_q, 10, &xHandle);
     
     for (;;) {
@@ -151,24 +151,20 @@ static void app_main_task(void *arg)
             cap_temperature_data->attr_temperature_send(cap_temperature_data);
         }
         if (thermostat_enable) {
-            change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
-            change_rgb_led_boiling(heating_setpoint, temperature_value);
+            change_rgb_led_heating(heating_setpoint, temperature_value);
         }
         if (thermostat_enable && temperature_value >= heating_setpoint) {
-            if( xHandle != NULL ) {
-                vTaskDelete( xHandle );
-            }
             thermostat_enable = false;
-            change_rgb_led_boiling(heating_setpoint, temperature_value);
+            change_rgb_led_heating(heating_setpoint, temperature_value);
             temperature_value = 0;
             buzzer_enable = true;
         }
         if (buzzer_enable) {
             beep();
             buzzer_enable = false;
-            change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_GPIO_OFF);
-            change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_GPIO_OFF);
-            change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_ON);
+            change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_OFF);
+            change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_OFF);
+            change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_ON);
             cap_switch_data->set_switch_value(cap_switch_data, caps_helper_switch.attr_switch.value_off);
             cap_switch_data->attr_switch_send(cap_switch_data);
         }

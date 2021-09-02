@@ -16,9 +16,9 @@
 void change_switch_state(int switch_state)
 {
     if (switch_state == SWITCH_OFF) {
-        gpio_set_level(GPIO_OUTPUT_MAINLED, LED_GPIO_OFF);
+        gpio_set_level(GPIO_OUTPUT_MAINLED, LED_OFF);
     } else {
-        gpio_set_level(GPIO_OUTPUT_MAINLED, LED_GPIO_ON);
+        gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
     }
 }
 
@@ -81,9 +81,9 @@ void iot_gpio_init(void)
 	dac_output_enable(DAC_OUTPUT_RGBLED_R);
 	dac_output_enable(DAC_OUTPUT_RGBLED_G);
 	
-	gpio_set_level(GPIO_OUTPUT_MAINLED, LED_GPIO_ON);
+	gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
 	gpio_set_level(GPIO_OUTPUT_BUZZER, BUZZER_OFF);
-	gpio_set_level(GPIO_OUTPUT_RGBLED_B, LED_GPIO_ON);
+	gpio_set_level(GPIO_OUTPUT_RGBLED_B, LED_ON);
 	dac_output_voltage(DAC_OUTPUT_RGBLED_R, 0);
 	dac_output_voltage(DAC_OUTPUT_RGBLED_G, 0);
 }
@@ -101,27 +101,28 @@ void change_rgb_state(int pin, int value)
 	}
 }
 
-void setpoint_rgb_indication(double heating_setpoint, int led_state)
+void setpoint_rgb_indication(double heating_setpoint)
 {
 	// any signalling of chosen temperature/heating mode
 	if (heating_setpoint <= 30) {
-		//blue
-		change_rgb_state(GPIO_OUTPUT_RGBLED_B, 1);
+		//green
+		change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_OFF);
+		change_rgb_led_state(0, 255, 0);
 	}
 	else if (heating_setpoint <= 50)
 	{	
 		// yellow
-	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_OFF);
 		change_rgb_led_state(255, 255, 0);
 	}
 	else if (heating_setpoint <= 75) {
 		//orange
-	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_OFF);
 		change_rgb_led_state(255, 195, 0);
 	}
 	else if (heating_setpoint <= 100) {
 		//red
-	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_OFF);
+	    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_OFF);
 		change_rgb_led_state(255, 0, 0);
 	}
 	else {
@@ -129,20 +130,20 @@ void setpoint_rgb_indication(double heating_setpoint, int led_state)
 	}
 	
 	vTaskDelay(pdMS_TO_TICKS(HEATING_SETPOINT_RGB_DURATION));
-	change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_GPIO_OFF);
-    change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_GPIO_OFF);
-    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_GPIO_ON);
+	change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_OFF);
+    change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_OFF);
+    change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_ON);
 }
 
 
 void temperature_events_task(void *arg) {
 	QueueHandle_t queue = (QueueHandle_t) arg;
     // Create a 1-Wire bus, using the RMT timeslot driver
-    owb_rmt_driver_info rmt_driver_info;
-    DS18B20_Info * ds18b20_info;
+	owb_rmt_driver_info rmt_driver_info;
  	OneWireBus *owb;
 	owb = owb_rmt_initialize(&rmt_driver_info, ADC_TEMPERATURE_SENSOR, RMT_CHANNEL_1, RMT_CHANNEL_0);
     owb_use_crc(owb, true);  // enable CRC check for ROM code
+    DS18B20_Info * ds18b20_info;
 	ds18b20_info = ds18b20_malloc(); 
 	ds18b20_init_solo(ds18b20_info, owb);
 	ds18b20_use_crc(ds18b20_info, true);
@@ -158,7 +159,7 @@ void temperature_events_task(void *arg) {
 		ds18b20_read_temp(ds18b20_info, &temperature_value);
 		printf("TEMP READ: %f\n", temperature_value);
 		send_value = (double) temperature_value;
-		xQueueOverwrite(queue, &send_value);
+		xQueueSendToBack(queue, &send_value, 0);
 		vTaskDelay(pdMS_TO_TICKS(TEMPERATURE_EVENT_MS_RATE));
 	}
 }
@@ -179,7 +180,7 @@ void beep() {
 	change_buzzer_state(BUZZER_OFF);
 }
 
-void change_rgb_led_boiling(double heating_setpoint, double current_temperature) 
+void change_rgb_led_heating(double heating_setpoint, double current_temperature)
 {
 	// Green 0, 255, 0    --   0%
 	// Yellow 255, 255, 0 --  50%
@@ -191,16 +192,23 @@ void change_rgb_led_boiling(double heating_setpoint, double current_temperature)
 
 	double progress_f = (current_temperature - min)/(max - min) * 100;
 	int progress = (int)round(progress_f);
-	printf("boiling progress: %d %% ", progress);
+	printf("heating progress: %d %% ", progress);
 
 	int red = RGB_LED_R;
 	int green = RGB_LED_G;
 	int blue = RGB_LED_B;
 
-	if (progress < 50) {
+	if (progress < 25) {
+		red += 2.5 * progress;
+	}
+	else if (progress < 50) {
 		red += 5 * progress;
 	}
 	else if (progress >= 50) {
+		red = 255;
+		green -= 2.5 * (progress - 50);
+	}
+	else if (progress >=75) {
 		red = 255;
 		green -= 5 * (progress - 50);
 	}
@@ -212,4 +220,5 @@ void change_rgb_led_boiling(double heating_setpoint, double current_temperature)
 void change_rgb_led_state(int red, int green, int blue) {
 	dac_output_voltage(DAC_OUTPUT_RGBLED_G, green);
 	dac_output_voltage(DAC_OUTPUT_RGBLED_R, red);
+	gpio_set_level(GPIO_OUTPUT_RGBLED_B, blue);
 }
