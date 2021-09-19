@@ -141,7 +141,7 @@ void temperature_events_task(void *arg) {
     // Create a 1-Wire bus, using the RMT timeslot driver
 	owb_rmt_driver_info rmt_driver_info;
  	OneWireBus *owb;
-	owb = owb_rmt_initialize(&rmt_driver_info, ADC_TEMPERATURE_SENSOR, RMT_CHANNEL_1, RMT_CHANNEL_0);
+	owb = owb_rmt_initialize(&rmt_driver_info, GPIO_TEMPERATURE_SENSOR, RMT_CHANNEL_1, RMT_CHANNEL_0);
     owb_use_crc(owb, true);  // enable CRC check for ROM code
     DS18B20_Info * ds18b20_info;
 	ds18b20_info = ds18b20_malloc(); 
