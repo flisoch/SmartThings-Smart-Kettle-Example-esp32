@@ -80,7 +80,7 @@ static void cap_switch_cmd_cb(struct caps_switch_data *caps_data)
 static void cap_thermostat_cmd_cb(struct caps_thermostatHeatingSetpoint_data *caps_data)
 { 
     heating_setpoint = caps_data->get_value(caps_data);
-    int led_state = get_switch_state();
+    // int led_state = get_switch_state();
     setpoint_rgb_indication(heating_setpoint);
 }
 

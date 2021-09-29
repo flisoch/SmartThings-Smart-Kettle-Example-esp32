@@ -127,49 +127,32 @@ void iot_gpio_init(void)
     }
 	ledc_fade_func_install(0);
 	
-	// dac_output_enable(DAC_OUTPUT_RGBLED_R);
-	// dac_output_enable(DAC_OUTPUT_RGBLED_G);
 
-	// gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
+
+	gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
 	gpio_set_level(GPIO_OUTPUT_BUZZER, BUZZER_OFF);
-	gpio_set_level(GPIO_OUTPUT_RGBLED_B, LED_ON);
-	// dac_output_voltage(DAC_OUTPUT_RGBLED_R, 0);
-	// dac_output_voltage(DAC_OUTPUT_RGBLED_G, 0);
 
-	printf("1. LEDC fade up to duty = %d\n", LEDC_TEST_DUTY);
-	for (ch = 0; ch < LEDC_TEST_CH_NUM - 1; ch++) {
-		ledc_set_fade_with_time(ledc_channel[ch].speed_mode,
-				ledc_channel[ch].channel, LEDC_TEST_DUTY, LEDC_TEST_FADE_TIME);
-		ledc_fade_start(ledc_channel[ch].speed_mode,
-				ledc_channel[ch].channel, LEDC_FADE_NO_WAIT);
-	}
+	// ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_TEST_DUTY);
+	// ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
+	ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_TEST_DUTY);
+	ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
+	// ledc_set_duty(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_TEST_DUTY);
+	// ledc_update_duty(ledc_channel[2].speed_mode, ledc_channel[2].channel);
 	vTaskDelay(pdMS_TO_TICKS(1000));
-
-
-	printf("2. LEDC fade down to duty = 0\n");
-	for (ch = 0; ch < LEDC_TEST_CH_NUM - 1; ch++) {
-		ledc_set_fade_with_time(ledc_channel[ch].speed_mode,
-				ledc_channel[ch].channel, 0, LEDC_TEST_FADE_TIME);
-		ledc_fade_start(ledc_channel[ch].speed_mode,
-				ledc_channel[ch].channel, LEDC_FADE_NO_WAIT);
-	}
+	
+	ledc_set_fade_with_time(ledc_channel[0].speed_mode,
+			ledc_channel[0].channel, LEDC_TEST_DUTY, LEDC_TEST_FADE_TIME*2);
+	ledc_fade_start(ledc_channel[0].speed_mode,
+			ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
 	vTaskDelay(pdMS_TO_TICKS(4000));
 
-
-	printf("3. LEDC set duty = %d without fade\n", LEDC_TEST_DUTY);
-	for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++) {
-		ledc_set_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel, LEDC_TEST_DUTY);
-		ledc_update_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel);
-	}
-	vTaskDelay(pdMS_TO_TICKS(1000));
-
-	printf("4. LEDC set duty = 0 without fade\n");
-	for (ch = 0; ch < LEDC_TEST_CH_NUM; ch++) {
-		ledc_set_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel, 0);
-		ledc_update_duty(ledc_channel[ch].speed_mode, ledc_channel[ch].channel);
-	}
-	vTaskDelay(pdMS_TO_TICKS(1000));
-    
+	ledc_set_fade_with_time(ledc_channel[1].speed_mode,
+			ledc_channel[1].channel, 0, LEDC_TEST_FADE_TIME*2);
+	ledc_fade_start(ledc_channel[0].speed_mode,
+			ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
+	vTaskDelay(pdMS_TO_TICKS(4000));
+	
+	
 }
 
 void change_rgb_state(int pin, int value)

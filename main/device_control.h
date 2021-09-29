@@ -17,7 +17,7 @@
 #define LEDC_HS_CH2_GPIO       (32)
 #define LEDC_HS_CH2_CHANNEL    LEDC_CHANNEL_2
 #define LEDC_TEST_DUTY         (4000)
-#define LEDC_TEST_FADE_TIME    (3000)
+#define LEDC_TEST_FADE_TIME    (2000)
 #define LEDC_TEST_CH_NUM       (3)
 
 #define TEMPERATURE_EVENT_MS_RATE 1000
