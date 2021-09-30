@@ -16,9 +16,9 @@
 #define LEDC_HS_CH1_CHANNEL    LEDC_CHANNEL_1
 #define LEDC_HS_CH2_GPIO       (32)
 #define LEDC_HS_CH2_CHANNEL    LEDC_CHANNEL_2
-#define LEDC_TEST_DUTY         (4000)
-#define LEDC_TEST_FADE_TIME    (2000)
-#define LEDC_TEST_CH_NUM       (3)
+#define LEDC_MAX_DUTY         (4000)
+#define LEDC_FADE_TIME    (2000)
+#define LEDC_CH_NUM       (3)
 
 #define TEMPERATURE_EVENT_MS_RATE 1000
 #define BUZZER_SOUND_DURATION 3000
@@ -52,6 +52,8 @@ enum led_gpio_state {
     LED_DAC_MAX = 255
 };
 
+
+
 void change_switch_state(int switch_state);
 void change_thermostat_state(int *thermostat_state);
 void iot_gpio_init(void);
@@ -60,6 +62,6 @@ double temperature_event(double temp);
 void change_rgb_state(int pin, int value);
 void beep();
 int get_button_event();
-void change_rgb_led_heating(double heating_setpoint, double current_temperature);
+void change_rgb_led_heating(double heating_setpoint, double prev_temperature, double current_temperature);
 void change_rgb_led_state(int red, int green, int blue);
 void temperature_events_task(void *arg);
