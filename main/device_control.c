@@ -12,6 +12,7 @@
 #include "freertos/queue.h"
 
 #include <math.h>
+#include <stdbool.h>
 
 ledc_channel_config_t ledc_channel[LEDC_CH_NUM] = {
 	{.channel = LEDC_RED_CHANNEL,
@@ -34,17 +35,45 @@ ledc_channel_config_t ledc_channel[LEDC_CH_NUM] = {
 	 .timer_sel = LEDC_TIMER},
 };
 
+static temperature_state_t *temperature_state;
+
+// void init_rgb_state(double heating_setpoint, double current_temperature) {
+// 	temperature_state = NULL;
+//     temperature_state = malloc(sizeof(ledc_rgb_state_t));
+//     if (!temperature_state) {
+//         printf("fail to malloc for caps_switch_data\n");
+//         return NULL;
+//     }
+//     memset(temperature_state, 0, sizeof(ledc_rgb_state_t));
+// 	temperature_state->current_temperature = current_temperature;
+// 	temperature_state->prev_temperature = 0;
+// 	temperature_state->heating_setpoint = heating_setpoint;
+// 	temperature_state->update_temperature = update_temperature;
+// 	change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MAX_DUTY, LEDC_MIN_DUTY);
+//     change_rgb_led_heating(heating_setpoint, 0, current_temperature);
+	
+	
+// }
+// static void update_temperature(temperature_state_t *temperature_state, double current_temperature)
+// {
+//     if (!temperature_state) {
+//         printf("caps_data is NULL\n");
+//         return;
+//     }
+//     temperature_state->prev_temperature = temperature_state->current_temperature;
+// 	temperature_state->current_temperature = current_temperature;
+// }
+
+
 void change_switch_state(int switch_state)
 {
 	if (switch_state == SWITCH_OFF)
 	{	
 		gpio_set_level(GPIO_OUTPUT_MAINLED, LED_OFF);
-		change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MIN_DUTY, LEDC_MAX_DUTY);
 	}
 	else
 	{
 		gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
-		change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MAX_DUTY, LEDC_MIN_DUTY);
 	}
 }
 
@@ -177,9 +206,7 @@ void setpoint_rgb_indication(double heating_setpoint)
 	}
 
 	vTaskDelay(pdMS_TO_TICKS(HEATING_SETPOINT_RGB_DURATION));
-	change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_OFF);
-	change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_OFF);
-	change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_ON);
+	change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MIN_DUTY, LEDC_MAX_DUTY);
 }
 
 void temperature_events_task(void *arg)
@@ -203,7 +230,6 @@ void temperature_events_task(void *arg)
 		ds18b20_convert_all(owb);
 		ds18b20_wait_for_conversion(ds18b20_info);
 		ds18b20_read_temp(ds18b20_info, &temperature_value);
-		printf("TEMP READ: %f\n", temperature_value);
 		send_value = (double)temperature_value;
 		xQueueSendToBack(queue, &send_value, 0);
 		vTaskDelay(pdMS_TO_TICKS(TEMPERATURE_EVENT_MS_RATE));
@@ -235,13 +261,13 @@ void change_rgb_led_heating(double heating_setpoint, double prev_temperature, do
 	double min = 0;
 	double max = heating_setpoint;
 
-	double progress_f = (current_temperature - min) / (max - min) * 100;
+	double progress_f = (current_temperature - min) / (max - min);
 	double progress_delta_f = (current_temperature - prev_temperature) / max;
-	int progress = (int)round(progress_f);
-	int progress_delta = (int)round(progress_delta_f);
+	// int progress = (int)round(progress_f);
+	// int progress_delta = (int)round(progress_delta_f);
 
-	printf("heating progress: %d %% \n", progress);
-	printf("delta progress: %f %% \n", progress_delta_f);
+	printf("heating progress: %f \n", progress_f);
+	printf("delta progress: %f \n", progress_delta_f);
 
 	printf("Boiling RGB before update: %d, %d, %d\n",
 		   ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel),
@@ -250,27 +276,49 @@ void change_rgb_led_heating(double heating_setpoint, double prev_temperature, do
 
 
 	int updated_duty;
-	if (progress < 50)
+	if (progress_f < 0.5)
 	{	
 		// Green max
 		ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY);
 		ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
-		// Red update proportionately to progress_delta_f
+		// Red update proportionaly to progress_delta_f
+		if (progress_delta_f < -0.5) {
+
+			progress_delta_f = progress_delta_f + 0.5;
+			ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
+			ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
+		}
 		updated_duty = ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel) + (int)round(2 * progress_delta_f * LEDC_MAX_DUTY);
-		printf("updated duty: %d", updated_duty);
+		if (updated_duty < LEDC_MIN_DUTY) {
+			updated_duty = LEDC_MIN_DUTY;
+		}
+		else if (updated_duty > LEDC_MAX_DUTY) {
+			updated_duty = LEDC_MAX_DUTY;
+		}
+		printf("updated duty red: %d", updated_duty);
 
 		ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
 		ledc_fade_start(ledc_channel[0].speed_mode,
 						ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
 		// red += 5 * progress;
 	}
-	else if (progress >= 50)
+	else if (progress_f >= 0.5)
 	{
 
 		ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
 		ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
+		
+		// 40 -> 60. delta = 20. split. if (cur - delta  < 50
+		// 55 -> 60 delta = 5. no split. 
+		if (progress_f - progress_delta_f  < 0.5) {
+			progress_delta_f = progress_f - 0.5;
+			ledc_set_duty(ledc_channel[LEDC_GREEN_CHANNEL].speed_mode, LEDC_GREEN_CHANNEL, LEDC_MAX_DUTY);
+			ledc_update_duty(ledc_channel[LEDC_GREEN_CHANNEL].speed_mode, LEDC_GREEN_CHANNEL);
+		}
+
 		updated_duty = ledc_get_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel) - (int)round(2 * progress_delta_f * LEDC_MAX_DUTY);
-		printf("updated duty: %d", updated_duty);
+
+		printf("updated duty green: %d", updated_duty);
 		ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
 		ledc_fade_start(ledc_channel[1].speed_mode,
 						ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
@@ -290,5 +338,20 @@ void change_rgb_led_state(int red, int green, int blue)
 	ledc_update_duty(ledc_channel[LEDC_GREEN_CHANNEL].speed_mode, LEDC_GREEN_CHANNEL);
 	ledc_set_duty(ledc_channel[LEDC_BLUE_CHANNEL].speed_mode, LEDC_BLUE_CHANNEL, blue);
 	ledc_update_duty(ledc_channel[LEDC_BLUE_CHANNEL].speed_mode, LEDC_BLUE_CHANNEL);
-	
+}
+
+void recalculate_duty_new_setpoint(double current_temperature, double prev_heating_setpoint, double heating_setpoint) {
+	double progress_f = (current_temperature - 0) / (heating_setpoint - 0);
+	if (progress_f >= 0.5) {
+		ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
+		ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
+		ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY - (int)round(progress_f - 0.5)*2*LEDC_MAX_DUTY);
+		ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
+	}
+	else {
+		ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY);
+		ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
+		ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY - (int)round(0.5 - progress_f)*2*LEDC_MAX_DUTY);
+		ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
+	}
 }

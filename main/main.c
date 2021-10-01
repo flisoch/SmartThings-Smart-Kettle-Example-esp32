@@ -79,14 +79,26 @@ static void cap_switch_cmd_cb(struct caps_switch_data *caps_data)
     int switch_state = get_switch_state();
     change_switch_state(switch_state);
     thermostat_enable = !thermostat_enable;
-    
+    if (thermostat_enable) {
+        change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MAX_DUTY, LEDC_MIN_DUTY);
+        change_rgb_led_heating(heating_setpoint, 0, cap_temperature_data->get_temperature_value(cap_temperature_data));
+    }
+	else {
+        change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MIN_DUTY, LEDC_MAX_DUTY);
+    }
 }
 
 static void cap_thermostat_cmd_cb(struct caps_thermostatHeatingSetpoint_data *caps_data)
 {
-    heating_setpoint = caps_data->get_value(caps_data);
-    // int led_state = get_switch_state();
-    setpoint_rgb_indication(heating_setpoint);
+    if (!thermostat_enable) {
+        heating_setpoint = caps_data->get_value(caps_data);
+        setpoint_rgb_indication(heating_setpoint);
+    }
+    else {
+        double prev_heating_setpoint = heating_setpoint;
+        heating_setpoint = caps_data->get_value(caps_data);
+        recalculate_duty_new_setpoint(cap_temperature_data->get_temperature_value(cap_temperature_data), prev_heating_setpoint, heating_setpoint);
+    }
 }
 
 static void capability_init()
