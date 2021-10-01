@@ -14,35 +14,37 @@
 #include <math.h>
 
 ledc_channel_config_t ledc_channel[LEDC_CH_NUM] = {
-	{.channel = LEDC_HS_CH0_CHANNEL,
+	{.channel = LEDC_RED_CHANNEL,
 	 .duty = 0,
-	 .gpio_num = LEDC_HS_CH0_GPIO,
+	 .gpio_num = LEDC_RED_GPIO,
 	 .speed_mode = LEDC_HS_MODE,
 	 .hpoint = 0,
-	 .timer_sel = LEDC_HS_TIMER},
-	{.channel = LEDC_HS_CH1_CHANNEL,
+	 .timer_sel = LEDC_TIMER},
+	{.channel = LEDC_GREEN_CHANNEL,
 	 .duty = 0,
-	 .gpio_num = LEDC_HS_CH1_GPIO,
+	 .gpio_num = LEDC_GREEN_GPIO,
 	 .speed_mode = LEDC_HS_MODE,
 	 .hpoint = 0,
-	 .timer_sel = LEDC_HS_TIMER},
-	{.channel = LEDC_HS_CH2_CHANNEL,
+	 .timer_sel = LEDC_TIMER},
+	{.channel = LEDC_BLUE_CHANNEL,
 	 .duty = 0,
-	 .gpio_num = LEDC_HS_CH2_GPIO,
+	 .gpio_num = LEDC_BLUE_GPIO,
 	 .speed_mode = LEDC_HS_MODE,
 	 .hpoint = 0,
-	 .timer_sel = LEDC_HS_TIMER},
+	 .timer_sel = LEDC_TIMER},
 };
 
 void change_switch_state(int switch_state)
 {
 	if (switch_state == SWITCH_OFF)
-	{
+	{	
 		gpio_set_level(GPIO_OUTPUT_MAINLED, LED_OFF);
+		change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MIN_DUTY, LEDC_MAX_DUTY);
 	}
 	else
 	{
 		gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
+		change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MAX_DUTY, LEDC_MIN_DUTY);
 	}
 }
 
@@ -112,7 +114,7 @@ void iot_gpio_init(void)
 		.duty_resolution = LEDC_TIMER_13_BIT,
 		.freq_hz = 5000,
 		.speed_mode = LEDC_HS_MODE,
-		.timer_num = LEDC_HS_TIMER,
+		.timer_num = LEDC_TIMER,
 		.clk_cfg = 0,
 	};
 	ledc_timer_config(&ledc_timer);
@@ -122,30 +124,8 @@ void iot_gpio_init(void)
 		ledc_channel_config(&ledc_channel[ch]);
 	}
 	ledc_fade_func_install(0);
-
 	gpio_set_level(GPIO_OUTPUT_MAINLED, LED_ON);
 	gpio_set_level(GPIO_OUTPUT_BUZZER, BUZZER_OFF);
-
-	// //ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
-	// //ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
-
-	// ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY);
-	// ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
-	// //ledc_set_duty(ledc_channel[2].speed_mode, ledc_channel[2].channel, LEDC_MAX_DUTY);
-	// //ledc_update_duty(ledc_channel[2].speed_mode, ledc_channel[2].channel);
-	// vTaskDelay(pdMS_TO_TICKS(1000));
-
-	// ledc_set_fade_with_time(ledc_channel[0].speed_mode,
-	// ledc_channel[0].channel, LEDC_MAX_DUTY, LEDC_FADE_TIME*2);
-	// ledc_fade_start(ledc_channel[0].speed_mode,
-	// 		ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
-	// vTaskDelay(pdMS_TO_TICKS(4000));
-
-	// ledc_set_fade_with_time(ledc_channel[1].speed_mode,
-	// 		ledc_channel[1].channel, 0, LEDC_FADE_TIME*2);
-	// ledc_fade_start(ledc_channel[1].speed_mode,
-	// 		ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
-	// vTaskDelay(pdMS_TO_TICKS(4000));
 }
 
 void change_rgb_state(int pin, int value)
@@ -183,7 +163,7 @@ void setpoint_rgb_indication(double heating_setpoint)
 	{
 		//orange
 		change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_OFF);
-		change_rgb_led_state(255, 195, 0);
+		change_rgb_led_state(255, 127, 0);
 	}
 	else if (heating_setpoint <= 100)
 	{
@@ -256,12 +236,12 @@ void change_rgb_led_heating(double heating_setpoint, double prev_temperature, do
 	double max = heating_setpoint;
 
 	double progress_f = (current_temperature - min) / (max - min) * 100;
-	double progress_delta_f = ((prev_temperature - min) / (max - min) * 100) - progress_f;
+	double progress_delta_f = (current_temperature - prev_temperature) / max;
 	int progress = (int)round(progress_f);
 	int progress_delta = (int)round(progress_delta_f);
 
 	printf("heating progress: %d %% \n", progress);
-	printf("delta progress: %d %% \n", progress_delta);
+	printf("delta progress: %f %% \n", progress_delta_f);
 
 	printf("Boiling RGB before update: %d, %d, %d\n",
 		   ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel),
@@ -269,25 +249,14 @@ void change_rgb_led_heating(double heating_setpoint, double prev_temperature, do
 		   ledc_get_duty(ledc_channel[2].speed_mode, ledc_channel[2].channel));
 
 
-	int duty_step = LEDC_MAX_DUTY / 100;
 	int updated_duty;
-	if (progress < 25)
-	{
+	if (progress < 50)
+	{	
+		// Green max
 		ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY);
 		ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
-		updated_duty = ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel) + duty_step * progress_delta;
-		printf("updated duty: %d", updated_duty);
-		ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
-		ledc_fade_start(ledc_channel[0].speed_mode,
-						ledc_channel[0].channel, LEDC_FADE_NO_WAIT);
-		// red += 2.5 * progress;
-	}
-	else if (progress < 50)
-	{
-
-		ledc_set_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel, LEDC_MAX_DUTY);
-		ledc_update_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel);
-		updated_duty = ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel) + duty_step * progress_delta;
+		// Red update proportionately to progress_delta_f
+		updated_duty = ledc_get_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel) + (int)round(2 * progress_delta_f * LEDC_MAX_DUTY);
 		printf("updated duty: %d", updated_duty);
 
 		ledc_set_fade_with_time(ledc_channel[0].speed_mode, ledc_channel[0].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
@@ -300,31 +269,26 @@ void change_rgb_led_heating(double heating_setpoint, double prev_temperature, do
 
 		ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
 		ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
-		updated_duty = ledc_get_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel) - duty_step * progress_delta;
+		updated_duty = ledc_get_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel) - (int)round(2 * progress_delta_f * LEDC_MAX_DUTY);
+		printf("updated duty: %d", updated_duty);
 		ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
 		ledc_fade_start(ledc_channel[1].speed_mode,
 						ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
 		// red = 255;
 		// green -= 2.5 * (progress - 50);
 	}
-	else if (progress >= 75)
-	{
-		ledc_set_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel, LEDC_MAX_DUTY);
-		ledc_update_duty(ledc_channel[0].speed_mode, ledc_channel[0].channel);
-		updated_duty = ledc_get_duty(ledc_channel[1].speed_mode, ledc_channel[1].channel) - duty_step * progress_delta;
-		ledc_set_fade_with_time(ledc_channel[1].speed_mode, ledc_channel[1].channel, updated_duty, TEMPERATURE_EVENT_MS_RATE);
-		ledc_fade_start(ledc_channel[1].speed_mode,
-						ledc_channel[1].channel, LEDC_FADE_NO_WAIT);
-		// red = 255;
-		// green -= 5 * (progress - 50);
-	}
+	
 
 	vTaskDelay(pdMS_TO_TICKS(RGB_BOILING_ADJUSTMENT_DURATION));
 }
 
 void change_rgb_led_state(int red, int green, int blue)
-{
-	dac_output_voltage(DAC_OUTPUT_RGBLED_G, green);
-	dac_output_voltage(DAC_OUTPUT_RGBLED_R, red);
-	gpio_set_level(GPIO_OUTPUT_RGBLED_B, blue);
+{	
+	ledc_set_duty(ledc_channel[LEDC_RED_CHANNEL].speed_mode, LEDC_RED_CHANNEL, red);
+	ledc_update_duty(ledc_channel[LEDC_RED_CHANNEL].speed_mode, LEDC_RED_CHANNEL);
+	ledc_set_duty(ledc_channel[LEDC_GREEN_CHANNEL].speed_mode, LEDC_GREEN_CHANNEL, green);
+	ledc_update_duty(ledc_channel[LEDC_GREEN_CHANNEL].speed_mode, LEDC_GREEN_CHANNEL);
+	ledc_set_duty(ledc_channel[LEDC_BLUE_CHANNEL].speed_mode, LEDC_BLUE_CHANNEL, blue);
+	ledc_update_duty(ledc_channel[LEDC_BLUE_CHANNEL].speed_mode, LEDC_BLUE_CHANNEL);
+	
 }

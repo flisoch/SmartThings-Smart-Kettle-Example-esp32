@@ -79,6 +79,7 @@ static void cap_switch_cmd_cb(struct caps_switch_data *caps_data)
     int switch_state = get_switch_state();
     change_switch_state(switch_state);
     thermostat_enable = !thermostat_enable;
+    
 }
 
 static void cap_thermostat_cmd_cb(struct caps_thermostatHeatingSetpoint_data *caps_data)
