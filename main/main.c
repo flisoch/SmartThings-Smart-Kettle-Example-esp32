@@ -89,15 +89,14 @@ static void cap_switch_cmd_cb(struct caps_switch_data *caps_data)
 }
 
 static void cap_thermostat_cmd_cb(struct caps_thermostatHeatingSetpoint_data *caps_data)
-{
+{   
+    heating_setpoint = caps_data->get_value(caps_data);
     if (!thermostat_enable) {
-        heating_setpoint = caps_data->get_value(caps_data);
         setpoint_rgb_indication(heating_setpoint);
     }
     else {
-        double prev_heating_setpoint = heating_setpoint;
-        heating_setpoint = caps_data->get_value(caps_data);
-        recalculate_duty_new_setpoint(cap_temperature_data->get_temperature_value(cap_temperature_data), prev_heating_setpoint, heating_setpoint);
+        change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MAX_DUTY, LEDC_MIN_DUTY);
+        change_rgb_led_heating(heating_setpoint, 0, cap_temperature_data->get_temperature_value(cap_temperature_data));
     }
 }
 
@@ -189,9 +188,7 @@ static void app_main_task(void *arg)
         {
             beep();
             buzzer_enable = false;
-            change_rgb_state(DAC_OUTPUT_RGBLED_G, LED_OFF);
-            change_rgb_state(DAC_OUTPUT_RGBLED_R, LED_OFF);
-            change_rgb_state(GPIO_OUTPUT_RGBLED_B, LED_ON);
+            change_rgb_led_state(LEDC_MIN_DUTY, LEDC_MIN_DUTY, LEDC_MAX_DUTY);
             cap_switch_data->set_switch_value(cap_switch_data, caps_helper_switch.attr_switch.value_off);
             cap_switch_data->attr_switch_send(cap_switch_data);
         }
