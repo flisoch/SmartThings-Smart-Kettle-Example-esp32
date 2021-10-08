@@ -18,7 +18,7 @@
 
 6. Создайте новое UI представление для кастомного Capability и сохраните результат в customCapabilityPresentation.json
 
-    `$./smartthings capabilities:create -j -i capabilityPresentationCopy.json -o customCapabilityPresentation.json`
+    `$./smartthings capabilities:presentation:create -j -i capabilityPresentationCopy.json -o customCapabilityPresentation.json`
 
 7. Добавьте файл capability-helper в директорию iot-core/src/include/caps и замените в нем идентификатор/id на полученный для кастомного Capability
 8. Включайте файл-помощник в файлы работы с Capability через директиву #include
